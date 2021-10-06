@@ -8,11 +8,12 @@ output: github_document
 ```{r setup}
 library(tidyverse)
 library(readxl)
+library(dplyr)
 ```
 
 # Problem 1
 
-## Specify the sheet in the Excel file and omit non-data entries.
+## Read and clean the Mr. Trash Wheel dataset.
 ```{r}
 MrTrash_df = 
   readxl::read_excel("./data/Trash-Wheel-Collection-Totals-8-6-19.xlsx", sheet = 1, 
@@ -20,5 +21,25 @@ MrTrash_df =
   janitor::clean_names() %>% 
   na.omit(dumpster) %>% 
   mutate(sports_balls = round(sports_balls, 0))
+```
+
+## Read and clean the precipitation data in 2018.
+
+```{r}
+Precipitation_2018 = 
+  readxl::read_excel("./data/Trash-Wheel-Collection-Totals-8-6-19.xlsx", sheet = 5, 
+                     range = "A2:B14") %>% 
+  mutate(Year = "2018") %>%
+  relocate(Year, Month)
+
+Precipitation_2019 =
+  readxl::read_excel("./data/Trash-Wheel-Collection-Totals-8-6-19.xlsx", sheet = 4, 
+                     range = "A2:B14", na = "") %>% 
+  mutate(Year = "2019") %>% 
+  relocate(Year, Month)
+
+Combined_dataset = 
+  merge(Precipitation_2018, Precipitation_2019, by = c("Year", "Month", "Total"), all = TRUE) %>% 
+  mutate(Month = month.name[Month])
 ```
 
