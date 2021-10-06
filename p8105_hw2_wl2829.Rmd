@@ -1,0 +1,24 @@
+---
+title: "p8105_hw2_wl2829"
+author: "Wentong"
+date: "10/5/2021"
+output: github_document
+---
+
+```{r setup}
+library(tidyverse)
+library(readxl)
+```
+
+# Problem 1
+
+## Specify the sheet in the Excel file and omit non-data entries.
+```{r}
+MrTrash_df = 
+  readxl::read_excel("./data/Trash-Wheel-Collection-Totals-8-6-19.xlsx", sheet = 1, 
+                     range = cell_cols("A:N"), na = "", col_names = TRUE) %>% 
+  janitor::clean_names() %>% 
+  na.omit(dumpster) %>% 
+  mutate(sports_balls = round(sports_balls, 0))
+```
+
