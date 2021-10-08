@@ -50,22 +50,80 @@ pols_month =
   read_csv("./data/pols-month.csv") %>% 
   janitor::clean_names() %>% 
   separate(mon, c("year", "month", "day"), sep = "-") %>%
-  mutate(month = round(as.numeric(month, 0))) %>% 
-  mutate(month = month.name[month]) %>% 
-  mutate(president = paste(prez_gop, prez_dem)) %>% 
-  subset(select = -c(prez_gop, prez_dem, day))
+  mutate(month = round(as.numeric(month, 0)),
+         month = month.name[month], 
+         president = case_when(prez_gop == 1 ~ "gop", 
+                   prez_dem == 1 ~ "dem")) %>% 
+  subset(select = -c(prez_gop, prez_dem, day)) %>% 
+  mutate(year = as.numeric(year))
+
+
 
 snp = 
   read_csv("./data/snp.csv") %>% 
   janitor::clean_names() %>%
   mutate(date = as.Date(date, format = "%m/%d/%y")) %>% 
   separate(date, c("year", "month", "day"), sep = "-") %>%
+  mutate(year = as.numeric(year),
+         year = case_when(year > 2015 ~ year - 100,
+                          year <=2015 ~ year)) %>% 
   mutate(month = round(as.numeric(month, 0))) %>% 
   mutate(month = month.name[month]) %>% 
   subset(select = -c(day))
 
+unemployment = 
+  read_csv("./data/unemployment.csv") %>% 
+  rename(year = Year) %>% 
+  pivot_longer(
+    Jan:Dec,
+    names_to = "month",
+    values_to = "scores"
+  ) %>% 
+  mutate(year = as.numeric(year))
 
+snp_pols = 
+  left_join(pols_month, snp, by = c("year", "month"))
+
+snp_pols_unemployment = 
+  left_join(snp_pols, unemployment, by = c("year", "month"))
 
 ```
 
+# Problem 3
+
+## Load and tidy data.
+```{r}
+baby_name = 
+  read_csv("./data/Popular_Baby_Names.csv") %>% 
+  janitor::clean_names() %>% 
+  mutate(childs_first_name = stringr::str_to_title(childs_first_name))
+popular_baby_name =
+  distinct(baby_name)
+  ## !duplicated(baby_name$ethnicity, baby_name$childs_first_name)
+
+Olivia_df = 
+  filter(popular_baby_name, childs_first_name == "Olivia") %>% 
+  subset(select = -c(gender)) %>% 
+  relocate(year_of_birth, childs_first_name) %>% 
+  pivot_wider(
+    names_from = "year_of_birth",
+    values_from = c(count, rank)
+  )
+  
+popular_boy_name =   
+  filter(popular_baby_name, rank == "1", gender == "MALE") %>%
+  subset(select = -c(rank)) %>% 
+  pivot_wider(
+    names_from = "year_of_birth",
+    values_from = "count"
+  )
+  
+```
+
+## scatter plot
+```{r}
+male_nonhispanic_2016 = 
+  filter(popular_baby_name, year_of_birth == "2016", ethnicity == "WHITE NON HISPANIC", gender == "MALE") %>% 
+  ggplot(aes(x = rank, y = count)) + geom_point()
+```
 
