@@ -15,7 +15,7 @@ library(readxl)
 ## Read and clean the Mr. Trash Wheel dataset.
 ```{r}
 MrTrash_df = 
-  readxl::read_excel("./data/Trash-Wheel-Collection-Totals-8-6-19.xlsx", sheet = 1, 
+  readxl::read_excel("./data/Trash-Wheel-Collection-Totals-7-2021-sept.xlsx", sheet = 1, 
                      range = cell_cols("A:N"), na = "", col_names = TRUE) %>% 
   janitor::clean_names() %>% 
   na.omit(dumpster) %>% 
@@ -26,13 +26,13 @@ MrTrash_df =
 
 ```{r}
 Precipitation_2018 = 
-  readxl::read_excel("./data/Trash-Wheel-Collection-Totals-8-6-19.xlsx", sheet = 5, 
+  readxl::read_excel("./data/Trash-Wheel-Collection-Totals-7-2021-sept.xlsx", sheet = 7, 
                      range = "A2:B14") %>% 
   mutate(Year = "2018") %>%
   relocate(Year, Month)
 
 Precipitation_2019 =
-  readxl::read_excel("./data/Trash-Wheel-Collection-Totals-8-6-19.xlsx", sheet = 4, 
+  readxl::read_excel("./data/Trash-Wheel-Collection-Totals-7-2021-sept.xlsx", sheet = 6, 
                      range = "A2:B14", na = "") %>% 
   mutate(Year = "2019") %>% 
   relocate(Year, Month)
