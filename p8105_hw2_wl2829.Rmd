@@ -72,20 +72,21 @@ snp =
   subset(select = -c(day))
 
 unemployment = 
-  read_csv("./data/unemployment.csv") %>% 
-  rename(year = Year) %>% 
+  read_csv("./data/unemployment.csv", col_names = c("year", "1":"12"), skip = 1) %>% 
   pivot_longer(
-    Jan:Dec,
+    "1":"12",
     names_to = "month",
     values_to = "scores"
   ) %>% 
-  mutate(year = as.numeric(year))
+  mutate(month = month.name[as.numeric(month)], year = as.numeric(year))
+  
 
 snp_pols = 
   left_join(pols_month, snp, by = c("year", "month"))
 
 snp_pols_unemployment = 
-  left_join(snp_pols, unemployment, by = c("year", "month"))
+  left_join(snp_pols, unemployment, by = c("year", "month")) %>% 
+  rename(results = scores)
 
 ```
 
