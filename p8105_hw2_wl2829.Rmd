@@ -5,7 +5,7 @@ date: "10/5/2021"
 output: github_document
 ---
 
-```{r setup}
+```{r setup, include = FALSE}
 library(tidyverse)
 library(readxl)
 ```
@@ -15,32 +15,50 @@ library(readxl)
 ## Read and clean the Mr. Trash Wheel dataset.
 ```{r}
 MrTrash_df = 
-  readxl::read_excel("./data/Trash-Wheel-Collection-Totals-7-2021-sept.xlsx", sheet = 1, 
+  readxl::read_excel("./data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", sheet = 1, 
                      range = cell_cols("A:N"), na = "", col_names = TRUE) %>% 
+  ## read the xlsx file.
   janitor::clean_names() %>% 
-  na.omit(dumpster) %>% 
-  mutate(sports_balls = round(sports_balls, 0))
+  na.omit(dumpster) %>% ## omit the rows that do not include specific data.
+  mutate(sports_balls = round(sports_balls, 0)) ## round the number
 ```
+The Mr.Trash Wheel dataset contains the data of the types and characteristics of the trash. The data is based on time, from 2014-05-16 to 2021-01-01, which includes 453 data in total. Clean the data to omit useless data and make the data table more concise.
+```{r}
+median_sportsball = median(MrTrash_df$sports_balls)
+```
+The median number of sports balls is `r median_sportsball`.
+
 
 ## Read and clean the precipitation data in 2018.
 
 ```{r}
 Precipitation_2018 = 
-  readxl::read_excel("./data/Trash-Wheel-Collection-Totals-7-2021-sept.xlsx", sheet = 7, 
+  readxl::read_excel("./data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", sheet = 7, 
                      range = "A2:B14") %>% 
-  mutate(Year = "2018") %>%
-  relocate(Year, Month)
+  mutate(Year = "2018") %>% ## add year variable
+  relocate(Year, Month) ## relocate the data
+```
+The precipitation data in 2018 contains 12 rows of data. The key variables are "Month" and "Total". The "Total" contains the sum of precipitation of each month. The total precipitation in 2018 is 70.33.
 
+```{r}
 Precipitation_2019 =
-  readxl::read_excel("./data/Trash-Wheel-Collection-Totals-7-2021-sept.xlsx", sheet = 6, 
+  readxl::read_excel("./data/Trash-Wheel-Collection-Totals-7-2020-2.xlsx", sheet = 6, 
                      range = "A2:B14", na = "") %>% 
-  mutate(Year = "2019") %>% 
-  relocate(Year, Month)
+  mutate(Year = "2019") %>% ## add year variable
+  relocate(Year, Month) ## relocate the data
+```
+The precipitation data in 2019 contains 12 rows of data. The key variables are "Month" and "Total". The "Total" contains the sum of precipitation of each month. 
 
+```{r}
 Combined_dataset = 
   merge(Precipitation_2018, Precipitation_2019, by = c("Year", "Month", "Total"), all = TRUE) %>% 
-  mutate(Month = month.name[Month])
+  ## use merge function to combine two datasets
+  mutate(Month = month.name[Month]) ## convert number to month name
 ```
+Combine two datasets and convert the number to month name.
+
+
+
 
 # Problem 2
 
@@ -49,46 +67,56 @@ Combined_dataset =
 pols_month = 
   read_csv("./data/pols-month.csv") %>% 
   janitor::clean_names() %>% 
-  separate(mon, c("year", "month", "day"), sep = "-") %>%
+  separate(mon, c("year", "month", "day"), sep = "-") %>% ## separate the date to "year" "month" "day"
   mutate(month = round(as.numeric(month, 0)),
-         month = month.name[month], 
+         month = month.name[month], ## convert number to month name
          president = case_when(prez_gop == 1 ~ "gop", 
-                   prez_dem == 1 ~ "dem")) %>% 
-  subset(select = -c(prez_gop, prez_dem, day)) %>% 
-  mutate(year = as.numeric(year))
+                   prez_dem == 1 ~ "dem")) %>% ## create "president" to take the value of dem and gop
+  subset(select = -c(prez_gop, prez_dem, day)) %>% ## remove variables
+  mutate(year = as.numeric(year)) ## convert the data format to number for the next combine
+```
 
-
-
+## Clean the data in snp.csv
+```{r}
 snp = 
   read_csv("./data/snp.csv") %>% 
   janitor::clean_names() %>%
-  mutate(date = as.Date(date, format = "%m/%d/%y")) %>% 
-  separate(date, c("year", "month", "day"), sep = "-") %>%
+  mutate(date = as.Date(date, format = "%m/%d/%y")) %>% ## convert the date format to see the whole year name
+  separate(date, c("year", "month", "day"), sep = "-") %>% ## separate the date to "year" "month" "day"
   mutate(year = as.numeric(year),
          year = case_when(year > 2015 ~ year - 100,
-                          year <=2015 ~ year)) %>% 
+                          year <=2015 ~ year)) %>% ## Solve the problem that years less than 68 are converted into 2068 rather than 1968
   mutate(month = round(as.numeric(month, 0))) %>% 
-  mutate(month = month.name[month]) %>% 
+  mutate(month = month.name[month]) %>% ## convert number to month name
   subset(select = -c(day))
+```
 
+## Tidy the unemployment data
+```{r}
 unemployment = 
   read_csv("./data/unemployment.csv", col_names = c("year", "1":"12"), skip = 1) %>% 
   pivot_longer(
     "1":"12",
     names_to = "month",
     values_to = "scores"
-  ) %>% 
-  mutate(month = month.name[as.numeric(month)], year = as.numeric(year))
-  
+  ) %>% ## switch "wide" format to "long" format
+  mutate(month = month.name[as.numeric(month)], year = as.numeric(year)) ## convert number to month name
+```
 
+## Join the datasets
+```{r}
 snp_pols = 
-  left_join(pols_month, snp, by = c("year", "month"))
+  left_join(pols_month, snp, by = c("year", "month")) ## merge pols_moth to snp
 
 snp_pols_unemployment = 
-  left_join(snp_pols, unemployment, by = c("year", "month")) %>% 
-  rename(results = scores)
+  left_join(snp_pols, unemployment, by = c("year", "month")) %>% ## merge unemployment
+  rename(results = scores) ## create "results" as key variable
 
 ```
+To make the data table more concise, create the president to take the valus of gop and dem. The pols-month dataset contains 9 variables (year month gov_gop sen_gop rep_gop gov_dem sen_dem rep_dem) and 822 rows of data (form 1947 to 2015).  
+The snp dataset contains 3 variables (year month close) and 787 rows of data (from 1950 to 2015). If we use as.Date to convert the date format, we will get unresonable year like "2065" instead of "1965". So I use case_when function to make the year display correct.
+The unemployment dataset contains 3 variables (year month scores) and 816 rows of data (from 1948 to 2015). I firstly renamed the variables then used the month.name function to get the full name of months.
+By merging three datasets, I got a dataset that contains 11 variables (year month gov_gop sen_gop rep_gop gov_dem sen_dem rep_dem president close results) and 822 rows of data. Three datasets are combined by variables "year" and "month". Since some data is not included in snp and unemployment, so there is "NA" in close and results.
 
 # Problem 3
 
@@ -97,34 +125,47 @@ snp_pols_unemployment =
 baby_name = 
   read_csv("./data/Popular_Baby_Names.csv") %>% 
   janitor::clean_names() %>% 
-  mutate(childs_first_name = stringr::str_to_title(childs_first_name))
+  mutate(childs_first_name = stringr::str_to_title(childs_first_name)) %>% ## unified name format
+  mutate(ethnicity = replace(ethnicity, ethnicity == "ASIAN AND PACI", "ASIAN AND PACIFIC ISLANDER"),
+         ethnicity = replace(ethnicity, ethnicity == "BLACK NON HISP", "BLACK NON HISPANIC"),
+         ethnicity = replace(ethnicity, ethnicity == "WHITE NON HISP", "WHITE NON HISPANIC"))
+  ## unified ethnicity name format
 popular_baby_name =
-  distinct(baby_name)
-  ## !duplicated(baby_name$ethnicity, baby_name$childs_first_name)
+  distinct(baby_name) ## remove duplicate rows
+```
+Tidy the orginal popular baby names dataset that inculdes duplicate rows and ununified ethnicity names. The number of rows of data changes from 19418 to 12181.
 
+```{r}
 Olivia_df = 
   filter(popular_baby_name, childs_first_name == "Olivia") %>% 
-  subset(select = -c(gender)) %>% 
+  subset(select = -c(gender)) %>% ## remove useless variable
   relocate(year_of_birth, childs_first_name) %>% 
   pivot_wider(
     names_from = "year_of_birth",
     values_from = c(count, rank)
-  )
-  
+  )  ## switch "long" format to "wide" format
+```
+The Olivia_df contains 14 variables and 4 rows of data. Switching long format to wide format allows us to more clearly see the changes in the number of names and rankings over time.
+
+```{r}
 popular_boy_name =   
   filter(popular_baby_name, rank == "1", gender == "MALE") %>%
+  janitor::clean_names() %>% 
   subset(select = -c(rank)) %>% 
   pivot_wider(
     names_from = "year_of_birth",
     values_from = "count"
-  )
-  
+  ) ## switch "long" format to "wide" format
 ```
+The popular_boy_name select rank1 name in each year. Through the table, we can see the count of the top ranked names and the ethnicity.
 
 ## scatter plot
 ```{r}
 male_nonhispanic_2016 = 
   filter(popular_baby_name, year_of_birth == "2016", ethnicity == "WHITE NON HISPANIC", gender == "MALE") %>% 
-  ggplot(aes(x = rank, y = count)) + geom_point()
+  ggplot(aes(x = rank, y = count, laber = childs_first_name)) + geom_point()
+
+male_nonhispanic_2016
 ```
 
+It can be seen that the count of the highest number reached 260, and as the rank decreases, the density of the data increases.
